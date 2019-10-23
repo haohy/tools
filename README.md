@@ -4,7 +4,7 @@
 
 ## Python 
 
-### Reload module
+### 重加载模型
 
 ```python
 # Python 3.4+ only.
@@ -22,14 +22,18 @@ reload(foo)
 
 ## Deep Learning (Pytorch)
 
-### Parameters Counting
+### ModuleList and Sequential 的区别
+
+[PyTorch 中的 ModuleList 和 Sequential: 区别和使用场景](https://zhuanlan.zhihu.com/p/64990232)
+
+### 参数统计
 
 ```python
 # The model is defined before, the codes below counts the number of parameters in training model
 num_parameters_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
 ```
 
-### Model DataParallel on multi GPUs
+### 让模型使用多块GPU
 
 ```python
 # Pytorch will only use one GPU by default. You can easily run your operations on multiple GPUs 
@@ -37,7 +41,7 @@ num_parameters_train = sum(p.numel() for p in model.parameters() if p.requires_g
 model = nn.DataParallel(model)
 ```
 
-### TensorboardX guide
+### TensorboardX guidance
 
 ```python
 # import module 
@@ -56,28 +60,113 @@ logger.add_scalars('{}/loss'.format(log_model_name), \
 tensorboard --logdir ./ [--port 6007]
 ```
 
+### pytorch 框架下 CNN 计算量（Flops），不适用RNN
+
+#### Install the latest version
+
+```bash
+pip install --upgrade git+https://github.com/sovrasov/flops-counter.pytorch.git
+```
+
+#### Example
+
+```python
+import torch
+import torchvision.models as models
+from ptflops import get_model_complexity_info
+
+with torch.cuda.device(0):
+  net = models.densenet161()
+  flops, params = get_model_complexity_info(net, (3, 224, 224), as_strings=True, print_per_layer_stat=True)
+  print('Flops:  ' + flops)
+  print('Params: ' + params)
+```
+
 
 
 ## Markdown
 
-### A collapsible section with markdown
+### 折叠单元
 
 ```markdown
 # A collapsible section with markdown (work in github)
 <details>
   <summary>Click to expand!</summary>
-  
+  <p>
   ## Heading
   1. A numbered
   2. list
      * With some
      * Sub bullets
+  </p>
 </details>
 ```
 
+-   效果展示
+
+![collapsible](./images/collapsible.gif)
+
+## Latex
+
+### 字符间空格不同大小
+
+| 空格类型     | 写法       | 效果演示     | 效果描述       |
+| ------------ | ---------- | ------------------------------------------------------------ | -------------- |
+| 两个quad空格 | a \qquad b | $a \qquad b$ | 两个*m*的宽度  |
+| quad空格     | a \quad b  | $a \quad b$ | 一个*m*的宽度  |
+| 大空格       | a\ b       | $a\ b$ | 1/3*m*宽度     |
+| 中等空格     | a\;b       | $a\;b$ | 2/7*m*宽度     |
+| 小空格       | a\,b       | $a\,b$ | 1/6*m*宽度     |
+| 没有空格     | ab         | $ab\,$ |                |
+| 紧贴         | a\!b       | $a\!b$ | 缩进1/6*m*宽度 |
+
+### 使公式间距相等，避免因分式和非分式造成间距差
+
+-   Key words:
+
+    **\vphantom{\frac11}**
+
+-   Equal vertical space
+
+```latex
+\begin{align}
+f_1(x) &= \frac{15x}{3} \\
+f_2(x) &= \vphantom{\frac11} 3x + 5 \\
+f_3(x) &= \vphantom{\frac11} 4x + 13
+\end{align}
+```
+
+$$
+\begin{align}
+f_1(x) &= \frac{15x}{3} \\
+f_2(x) &= \vphantom{\frac11}3x + 5 \\
+f_3(x) &= \vphantom{\frac11}4x + 13
+\end{align}
+$$
+
+-   Unequal vertical space
+
+```latex
+\begin{align}
+f_1(x) &= \frac{15x}{3} \\
+f_2(x) &= 3x + 5 \\
+f_3(x) &= 4x + 13
+\end{align}
+```
+
+$$
+\begin{align}
+f_1(x) &= \frac{15x}{3} \\
+f_2(x) &= 3x + 5 \\
+f_3(x) &= 4x + 13
+\end{align}
+$$
+
+
+
 ## Matplotlib
 
-### Draw scatter figure
+### 画散点图
 
 ```python
 # data:
@@ -109,11 +198,8 @@ plt.show()
 plt.savefig('./result.png')
 ```
 
--   display 
+-   效果展示
 
-    ![scatter_figure][figure_1]
+    ![scatter_figure](./images/scatter_figure.png)
 
-
-
-[figure_1]: ./images/scatter_figure.png
 
