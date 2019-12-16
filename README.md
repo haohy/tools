@@ -228,6 +228,8 @@ for i, txt in enumerate(label):
         ax.annotate(txt, (x[i]+5,y[i]), color='r', fontsize=10)
 plt.show()
 plt.savefig('./result.png')
+# save the figure to pdf file
+plt.savefig('result.pdf', format='pdf')
 ```
 
 -   效果展示
