@@ -1,10 +1,6 @@
 # Tools list
 
-
-
-<!--TOC-->
-
-
+[TOC]
 
 ## Python 
 
@@ -22,13 +18,35 @@ from foo.utils import *
 reload(foo)
 ```
 
+### Pytorch 多进程
+
+```python
+import torch.multiprocessing as mp
+
+processes = []
+params_list = [['mts_archive', 'ArabicDigits', 'fcn', 'adam'],
+               ['mts_archive', 'AUSLAN', 'fcn', 'adam'],
+               ['mts_archive', 'CharacterTrajectories', 'fcn', 'adam']]
+num_processes = len(params_list)
+
+for i in range(num_processes):
+    p = mp.Process(target=main, args=(params_list[i]))
+    p.start()
+    processes.append(p)
+
+for p in processes:
+    p.join()
+```
+
 
 
 ## Deep Learning (Pytorch)
 
-### ModuleList and Sequential 的区别
+### ModuleList 和 Sequential 的区别
 
 [PyTorch 中的 ModuleList 和 Sequential: 区别和使用场景](https://zhuanlan.zhihu.com/p/64990232)
+
+
 
 ### 参数统计
 
@@ -37,6 +55,8 @@ reload(foo)
 num_parameters_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
 ```
 
+
+
 ### 让模型使用多块GPU
 
 ```python
@@ -44,6 +64,8 @@ num_parameters_train = sum(p.numel() for p in model.parameters() if p.requires_g
 # by making your model run parallelly using `DataParallel`
 model = nn.DataParallel(model)
 ```
+
+
 
 ### TensorboardX guidance
 
@@ -63,6 +85,8 @@ logger.add_scalars('{}/loss'.format(log_model_name), \
 # view logs across browser
 tensorboard --logdir ./ [--port 6007]
 ```
+
+
 
 ### pytorch 框架下 CNN 计算量（Flops），不适用RNN
 
@@ -110,6 +134,8 @@ with torch.cuda.device(0):
 
 ![collapsible](./images/collapsible.gif)
 
+
+
 ## Latex
 
 ### 字符间空格不同大小
@@ -123,6 +149,8 @@ with torch.cuda.device(0):
 | 小空格       | a\,b       | $a\,b$ | 1/6*m*宽度     |
 | 没有空格     | ab         | $ab\,$ |                |
 | 紧贴         | a\!b       | $a\!b$ | 缩进1/6*m*宽度 |
+
+
 
 ### 使公式间距相等，避免因分式和非分式造成间距差
 
@@ -205,5 +233,51 @@ plt.savefig('./result.png')
 -   效果展示
 
     ![scatter_figure](./images/scatter_figure.png)
+    
+    ### 画图常用参数
+    
+    #### 线条风格(linestyle)
+    
+    | 线条风格 | 实线 | 虚线 | 破折线 | 点画线 | 无线条    |
+    | -------- | ---- | ---- | ------ | ------ | --------- |
+    | 代码表示 | -    | :    | –      | -.     | None 或 , |
+    
+    #### 线条颜色(color)
+    
+    | 线条颜色 | 红   | 洋红 | 黄   | 绿   | 青   | 蓝   | 黑   | 白   |
+    | -------- | ---- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+    | 代码表示 | r    | m    | y    | g    | c    | b    | k    | w    |
+    
+    #### 线条标记(marker)
+    
+    | 标记 |   描述   |  标记   |   描述   | 标记 |   描述   |
+    | :--: | :------: | :-----: | :------: | :--: | :------: |
+    |  o   |   圆圈   |    .    |    点    |  *   |   星号   |
+    |  +   |   加号   |    v    | 朝下三角 |  ^   | 朝上三角 |
+    |  <   | 朝左三角 |    >    | 朝右三角 |  D   |  大菱形  |
+    |  d   |  小菱形  |    s    |  正方形  |  p   |  五边形  |
+    |  H   | 大六边形 |    h    | 小六边形 |  p   |  八边形  |
+    |  x   |   ✘号    | None或, |  无标记  |      |          |
+    
+    #### 参考博客：
+    
+    -    [https://blog.csdn.net/guoziqing506/article/details/78975150](https://blog.csdn.net/guoziqing506/article/details/78975150)
+    -   博客包含以下内容：
+        -   绘制一个最简单的折线图
+        -   绘制不同风格的线条
+        -   坐标轴的控制
+        -   坐标范围
+        -   坐标标题
+        -   坐标间隔设定
+        -   多图叠加
+            -   多曲线
+            -   多图与多子图
+        -   标题和图例
+            -   图像标题
+            -   图例
+        -   网格，背景色以及文字注释
+            -   添加网格
+            -   背景色
+            -   文字注释
 
 
