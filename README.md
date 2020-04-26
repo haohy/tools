@@ -16,6 +16,10 @@ from foo.utils import *
 
 # Condition 2: foo.py is a script, reload foo.py
 reload(foo)
+
+# Condition 3: foo.py is a script, Foo is a class in foo.py, reload Foo
+relaod(foo)
+from foo import Foo
 ```
 
 ### Pytorch 多进程
@@ -38,7 +42,7 @@ for p in processes:
     p.join()
 ```
 
-## [深拷贝与浅拷贝](https://www.cnblogs.com/richardzhu/p/4723750.html)
+### [深拷贝与浅拷贝](https://www.cnblogs.com/richardzhu/p/4723750.html)
 
 Python中的对象之间赋值时是按引用传递的，如果需要拷贝对象，需要使用标准库中的 `copy` 模块。
 
@@ -66,7 +70,32 @@ Python中的对象之间赋值时是按引用传递的，如果需要拷贝对�
    d= [1, 2, 3, 4, ['a', 'b']]
    ```
 
-   
+### for 和 if else 同一行使用方法
+
+- `for` 和 `if` 同一行时，`if` 放在 `for` **后面**
+
+  ```python
+  mask_ = [[1 for j in range(6) if i<j] for i in range(6)]
+  
+  >>> mask_
+  [[1, 1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1], [1, 1], [1], []]
+  ```
+
+- `for` 和 `if else` 同一行时，`if else` 放在 `for` **前面**
+
+  ```python
+  mask_ = [[1 if i<j  else 0 for j in range(6)] for i in range(6)]
+  
+  >>> mask_
+  [[0, 1, 1, 1, 1, 1],
+   [0, 0, 1, 1, 1, 1],
+   [0, 0, 0, 1, 1, 1],
+   [0, 0, 0, 0, 1, 1],
+   [0, 0, 0, 0, 0, 1],
+   [0, 0, 0, 0, 0, 0]]
+  ```
+
+  
 
 ## Deep Learning (Pytorch)
 
