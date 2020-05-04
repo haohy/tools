@@ -22,25 +22,7 @@ relaod(foo)
 from foo import Foo
 ```
 
-### Pytorch 多进程
 
-```python
-import torch.multiprocessing as mp
-
-processes = []
-params_list = [['mts_archive', 'ArabicDigits', 'fcn', 'adam'],
-               ['mts_archive', 'AUSLAN', 'fcn', 'adam'],
-               ['mts_archive', 'CharacterTrajectories', 'fcn', 'adam']]
-num_processes = len(params_list)
-
-for i in range(num_processes):
-    p = mp.Process(target=main, args=(params_list[i]))
-    p.start()
-    processes.append(p)
-
-for p in processes:
-    p.join()
-```
 
 ### [深拷贝与浅拷贝](https://www.cnblogs.com/richardzhu/p/4723750.html)
 
@@ -70,6 +52,8 @@ Python中的对象之间赋值时是按引用传递的，如果需要拷贝对�
    d= [1, 2, 3, 4, ['a', 'b']]
    ```
 
+
+
 ### for 和 if else 同一行使用方法
 
 - `for` 和 `if` 同一行时，`if` 放在 `for` **后面**
@@ -95,9 +79,265 @@ Python中的对象之间赋值时是按引用传递的，如果需要拷贝对�
    [0, 0, 0, 0, 0, 0]]
   ```
 
+
+
+### from IPython import embed 遇到的坑
+
+torch.multiprocessing 和 from IPython import embed 不要同时用，会有 bug
+
+
+
+## Tensorflow
+
+### 参数统计
+
+```python
+import operator
+def num_params():
+        """ Return total num of params of the model  """
+        total_num = 0
+        for var in tf.trainable_variables():
+            shape = var.get_shape()
+            total_num += functools.reduce(operator.mul, [dim.value for dim in shape], 1)
+        return total_num
+```
+
+
+
+### 学习率衰减
+
+```python
+class PlateauLRDecay:
+    """ Adjust learning rate.
+    Args:
+    	init_lr: float, initial learning rate.
+    	epoch_patience: int, the epoch interval to reduce lr.
+    	period_patience: int, the upper-bound number of epoch_patience.
+    	min_lr: float, the minimum learning rate.
+    	rate: float, reduce rate.
+    	verbose: bool, if display learning rate on shell or not.
+    """
+    def __init__(self, init_lr, epoch_patience, period_patience, min_lr=0.00001, rate=0.4, verbose=False):
+        self.lr = init_lr
+        self.epoch_patience = epoch_patience
+        self.period_patience = period_patience
+        self.min_lr = min_lr
+        self.rate = rate
+        self.verbose = verbose
+
+        self.prev_best_epoch_num = 0
+        self.prev_best_loss = float('inf')
+
+        if self.lr <= self.min_lr:
+            self.lr = self.min_lr
+            self.is_min_lr = True
+        else:
+            self.is_min_lr = False
+
+    def update_lr(self, loss, epoch_num):
+        """ Update learning rate.
+        Args:
+        	loss: float, loss of every epoch.
+        	epoch_num: int, epoch.
+        Return:
+        	bool, if update or not.
+        """
+        if loss < self.prev_best_loss:
+            self.prev_best_loss = loss
+            self.prev_best_epoch_num = epoch_num
+        else:
+            epochs = epoch_num - self.prev_best_epoch_num
+            if self.is_min_lr is True or epochs >= self.epoch_patience * self.period_patience:
+                self.lr = 0.0
+            elif epochs % self.epoch_patience == 0:
+                # reduce lr
+                self.lr = min(self.lr * self.rate, self.min_lr)
+                if self.is_min_lr is False and self.lr == self.min_lr:
+                    self.is_min_lr = True
+                    self.prev_best_epoch_num = epoch_num
+                if self.verbose:
+                    print('Reduce lr to ', self.lr)
+                return True
+
+        return False
+```
+
+
+
+### summary_writer
+
+```python
+def init_summary_writer(self, root_dir):
+    """ Init tensorboard writer  """
+    tf_board_dir = 'tfb_dir'
+    folder = os.path.join(root_dir, tf_board_dir)
+    self.train_summary_writer = tf.summary.FileWriter(os.path.join(folder, 'train'), self.sess.graph)
+    self.valid_summary_writer = tf.summary.FileWriter(os.path.join(folder, 'valid'))
+    self.test_summary_writer = tf.summary.FileWriter(os.path.join(folder, 'test'))
+
+def write_summary(self, epoch_num, kv_pairs, phase):
+    """ Write summary into tensorboard """
+    if phase == RunnerPhase.TRAIN:
+        summary_writer = self.train_summary_writer
+    elif phase == RunnerPhase.VALIDATE:
+        summary_writer = self.valid_summary_writer
+    elif phase == RunnerPhase.PREDICT:
+        summary_writer = self.test_summary_writer
+    else:
+        raise RuntimeError('Unknow phase: ' + phase)
+
+    if summary_writer is None:
+        return
+
+    for key, value in kv_pairs.items():
+        metrics = tf.Summary()
+        metrics.value.add(tag=key, simple_value=value)
+        summary_writer.add_summary(metrics, epoch_num)
+
+    summary_writer.flush()
+```
+
+
+
+
+
+### APIs
+
+#### tf.scan
+
+[http://wuxiaoqian.blogspot.com/2017/07/tfscan.html](http://wuxiaoqian.blogspot.com/2017/07/tfscan.html)
+
+```python
+def dynamic_run(self, seq_type_emb, dtime):
+        def move_forward_fn(accumulator, item):
+            pass
+            return h_t, init_state
+
+        initial_state = list()
+        initial_h_t = list()
+
+        h_ts, cell_states = tf.scan(move_forward_fn,
+                                    elements,
+                                    initializer=(initial_h_t, initial_state))
+
+        return h_ts, cell_states
+```
+
+
+
+#### tf.gather_nd
+
+[https://zhuanlan.zhihu.com/p/45673869](https://zhuanlan.zhihu.com/p/45673869)
+
+![tf_gather_nd_1](images/tf_gather_nd_1.jpg)
+
+![tf_gather_nd_2](images/tf_gather_nd_2.jpg)
+
+
+
+#### tf.split vs. torch.tensor.split
+
+- tf.split(input, num_split, dimension)
+
+  dimension 的意思就是输入张量的哪一个维度，如果是 0 就表示对第 0 维度进行切割。num_split 就是切割的数量，如果是 2 就表示输入张量被切成 2 份，每一份是一个列表。
+
+  ```python
+  import tensorflow as tf;
+  
+  A = [[1,2,3],[4,5,6]]
+  x = tf.split(A, 3, 1)
+  
+  with tf.Session() as sess:
+      c = sess.run(x)
+      for ele in c:
+          print( ele )
+  
+  # Out:
+  # [[1]
+  #  [4]]
+  # [[2]
+  #  [5]]
+  # [[3]
+  #  [6]]
+  ```
+
+- torch.tensor.split(tensor,split_size_or_sections,dim=0)
+
+  - 第一个参数是待分割张量
+  - 第二个参数有两种形式。
+    - 第一种是分割份数；
+    - 第二种这是分割方案，这是一个list，待分割张量将会分割为len（list）份，每一份的大小取决于list中的元素
+  - 第三个参数为分割维度
+
+  ```python
+  section=[1,2,1,2,2]
+  d=torch.randint(0, 10, (8,4))
+  print(torch.split(d,section,dim=0))
+  #输出结果为：
+  (tensor([[5, 8, 7, 9]]), tensor([[1, 4, 9, 3],
+          [1, 3, 0, 4]]), tensor([[2, 4, 4, 2]]), tensor([[0, 3, 4, 8],
+          [5, 7, 6, 3]]), tensor([[9, 2, 7, 1],
+          [7, 5, 8, 8]]))
+  ```
+
   
 
-## Deep Learning (Pytorch)
+#### tf.cumsum
+
+[https://blog.csdn.net/YiRanNingJing/article/details/79451786](https://blog.csdn.net/YiRanNingJing/article/details/79451786)
+
+```python
+tf.cumsum(
+    x,
+    axis=0,
+    exclusive=False,
+    reverse=False,
+    name=None
+)
+```
+
+函数 tf.cumsum 是 cumulative sum缩写，计算累积和，即沿着tensor（张量）x的某一个维度axis，计算累积和。
+
+参数解释：
+
+- x, 即我们要计算累积和的tensor。
+
+- axis=0, 默认是沿着x的第0维计算累积和。
+
+-  exclusive=False, 表示输出结果的第一元素是否与输入的第一个元素一致。默认exclusive=False，表示输出的第一个元素与输入的第一个元素一致（By default, this op performs an inclusive cumsum, which means that the first element of the input is identical to the first element of the output）。这是官方文档的解释。当我们对一个数组arr（或其他什么东东）进行累积求和时，我们要对累积和sum进行初始化，初始化的方式有两种，一种是将累积和初始化为0，即sum=0，一种是使用数组arr的第一个元素对累积和进行初始化，即sum=arr[0]。所以参数exclusive描述的是如何对累积和进行初始化。
+
+-  reverse=False, 表示是否逆向累积求和。默认reverse=False，即正向累积求和。
+
+```python
+a = [[1 ,2, 3], 
+     [4, 5, 6], 
+     [7, 8, 9]]
+# axis=0
+sum1 = tf.cumsum(a, axis=0)
+# sum1 = [[ 1,  2,  3],
+#         [ 5,  7,  9],
+#         [12, 15, 18]]
+
+# exclusive=True
+sum4 = tf.cumsum(a, exclusive=True)
+# sum4= [[0, 0, 0],
+#        [1, 2, 3],
+#        [5, 7, 9]]# 
+
+# reverse=True
+sum5 = tf.cumsum(a, reverse=True)
+# sum5 = [[12, 15, 18],
+#         [11, 13, 15],
+#         [ 7,  8,  9]]# 
+```
+
+
+
+
+
+
+
+## Pytorch
 
 ### ModuleList 和 Sequential 的区别
 
@@ -110,6 +350,28 @@ Python中的对象之间赋值时是按引用传递的，如果需要拷贝对�
 ```python
 # The model is defined before, the codes below counts the number of parameters in training model
 num_parameters_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
+```
+
+
+
+### Pytorch 多进程
+
+```python
+import torch.multiprocessing as mp
+
+processes = []
+params_list = [['mts_archive', 'ArabicDigits', 'fcn', 'adam'],
+               ['mts_archive', 'AUSLAN', 'fcn', 'adam'],
+               ['mts_archive', 'CharacterTrajectories', 'fcn', 'adam']]
+num_processes = len(params_list)
+
+for i in range(num_processes):
+    p = mp.Process(target=main, args=(params_list[i]))
+    p.start()
+    processes.append(p)
+
+for p in processes:
+    p.join()
 ```
 
 
